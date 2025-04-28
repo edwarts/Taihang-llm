@@ -172,3 +172,59 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# PyTorch specific
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.onnx
+*.tflite
+*.h5
+*.hdf5
+
+# Data files
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.txt
+*.dat
+*.data
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.tar
+*.gz
+*.zip
+*.7z
+*.rar
+
+# Logs and outputs
+logs/
+*.log
+tensorboard/
+runs/
+wandb/
+mlruns/
+checkpoints/
+saved_models/
+outputs/
+results/
+
+# Large files
+*.mp4
+*.avi
+*.mov
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
