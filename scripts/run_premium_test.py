@@ -12,8 +12,11 @@ from src.processor import DeepFeatureEngineer
 from src.factory import LocalDataFactory
 from src.config import TARGET_SYMBOLS
 
+# Ensure data directory exists
+os.makedirs('data', exist_ok=True)
+
 # ⚠️ 填入你的 Premium Key
-PREMIUM_KEY = "YOUR_PREMIUM_KEY_HERE"
+PREMIUM_KEY = os.getenv("FINNHUB_API_KEY")
 
 async def main():
     print("=========================================")
@@ -27,7 +30,9 @@ async def main():
     
     # 2. 选取几只代表性股票进行测试 (避免跑完30只太慢)
     test_symbols = ["NVDA", "GME", "JPM"] 
-    target_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    # Use a known trading date with data available
+    # 2025-01-31 was a Friday - should have trading data
+    target_date = "2025-01-31"
     
     print(f"📅 测试日期: {target_date}")
     print(f"🎯 目标股票: {test_symbols}")
@@ -35,14 +40,16 @@ async def main():
     for sym in test_symbols:
         print(f"\n>>> 处理 {sym} ...")
         
-        # A. 拉取真实 Tick
-        raw_ticks = bridge.fetch_real_ticks(sym, target_date)
-        if raw_ticks is None: continue
-        
-        # B. 特征工程 (这是真正的计算，不再是模拟!)
-        print(f"   计算订单流与市场结构 (Ticks: {len(raw_ticks)})...")
-        # 传入 API 返回的 DataFrame 直接处理
-        df_features = engineer.process_dataframe(raw_ticks, timeframe='5min')
+        # A. 拉取 1min 与 5min candle 数据
+        candles_1m = bridge.fetch_candles(sym, target_date, resolution='1')
+        candles_5m = bridge.fetch_candles(sym, target_date, resolution='5')
+        if candles_5m is None or candles_5m.empty:
+            print("   未获取到 5min K 线，跳过")
+            continue
+
+        # B. 特征工程 (使用 5min K 线作为主时序)
+        print(f"   计算订单流与市场结构 (Bars: {len(candles_5m)})...")
+        df_features = engineer.process_dataframe(candles_5m, timeframe='5min')
         
         if df_features.empty:
             print("   数据不足，跳过")
@@ -67,11 +74,17 @@ async def main():
             print(res['output'])
             print("-" * 30)
         
-        # 可选：保存中间数据验证
-        # df_features.to_csv(f"data/debug_{sym}.csv")
+        # 可选：保存中间数据验证（包含 1m 与 5m）
+        try:
+            if candles_1m is not None and not candles_1m.empty:
+                candles_1m.to_csv(f"data/debug_{sym}_1m.csv")
+            candles_5m.to_csv(f"data/debug_{sym}_5m.csv")
+            df_features.to_csv(f"data/debug_{sym}_features.csv")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
-    if "YOUR_PREMIUM" in PREMIUM_KEY:
-        print("❌ 请在脚本中填入 Finnhub Premium API Key")
+    if not PREMIUM_KEY:
+        print("WARNING: FINNHUB_API_KEY environment variable not set. Please set it first.")
     else:
         asyncio.run(main())

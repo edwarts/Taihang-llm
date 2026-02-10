@@ -1,0 +1,5 @@
+# WSL2 脚本强制使用 LF 换行符
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
